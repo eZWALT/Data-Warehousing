@@ -6,8 +6,8 @@
 
 -- 1. FH (Flight hours) aka airborne time
 -- ASSUMPTION: oracle timestamps work with days I guess
-
-WITH FlightHours AS (
+-- ADD FUNCTION (group, time_measure)
+WITH FlightHoursAircraft AS (
     SELECT 
         aircraftRegistration, 
         SUM(EXTRACT(actualArrival - actualDeparture) * 24) AS flight_hours
@@ -18,9 +18,20 @@ WITH FlightHours AS (
     GROUP BY 
         aircraftRegistration
 ),
+WITH FlightHoursModel AS (
+    SELECT 
+        aircraft_model,
+        SUM(EXTRACT(actualArrival - actualDeparture) * 24) AS flight_hours
+    FROM 
+        Flights 
+    WHERE 
+        cancelled = FALSE 
+    GROUP BY 
+        aircraft_model
+),
 
 -- 2. TO (Flight cycles) aka number of takeoffs
-FlightCycles AS (
+FlightCyclesAircraft AS (
     SELECT 
         aircraftRegistration, 
         COUNT(*) AS flight_cycles 
@@ -30,6 +41,17 @@ FlightCycles AS (
         cancelled = FALSE 
     GROUP BY 
         aircraftRegistration
+),
+FlightCyclesModel AS (
+    SELECT 
+        aircraft_model, 
+        COUNT(*) AS flight_cycles 
+    FROM 
+        Flights 
+    WHERE 
+        cancelled = FALSE 
+    GROUP BY 
+        aircraft_model
 ),
 
 
@@ -82,6 +104,7 @@ DailyCycles AS (
 DelayData AS (
     SELECT 
         aircraftRegistration,
+        aircraft_model,
         COUNT(*) AS delay_count,
         SUM(EXTRACT(EPOCH FROM (actualArrival - actualDeparture))/60) AS total_delay_minutes
     FROM 
@@ -93,10 +116,12 @@ DelayData AS (
         AND actualArrival > actualDeparture + INTERVAL '15' MINUTE
         AND actualArrival < actualDeparture + INTERVAL '6' HOUR
     GROUP BY 
-        aircraftRegistration
+        aircraftRegistration,
+        aircraft_model
 ), DelayRate AS (
     SELECT 
         DD.aircraftRegistration,
+        aircraft_model,
         (DD.delay_count / FC.flight_cycles) * 100 AS delay_rate
     FROM 
         DelayData DD, FlightCycles FC 
