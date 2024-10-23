@@ -6,20 +6,10 @@
 
 -- 1. FH (Flight hours) aka airborne time
 -- ASSUMPTION: oracle timestamps work with days I guess
--- ADD FUNCTION (group, time_measure)
+-- per day (also per month and per year).
 WITH FlightHoursAircraft AS (
     SELECT 
         aircraftRegistration, 
-        SUM(EXTRACT(actualArrival - actualDeparture) * 24) AS flight_hours
-    FROM 
-        Flights 
-    WHERE 
-        cancelled = FALSE 
-    GROUP BY 
-        aircraftRegistration
-),
-WITH FlightHoursModel AS (
-    SELECT 
         aircraft_model,
         SUM(EXTRACT(actualArrival - actualDeparture) * 24) AS flight_hours
     FROM 
@@ -27,30 +17,23 @@ WITH FlightHoursModel AS (
     WHERE 
         cancelled = FALSE 
     GROUP BY 
+        aircraftRegistration,
         aircraft_model
-),
+)
 
 -- 2. TO (Flight cycles) aka number of takeoffs
+-- per day (also per month and per year).
 FlightCyclesAircraft AS (
     SELECT 
         aircraftRegistration, 
+        aircraft_model,
         COUNT(*) AS flight_cycles 
     FROM 
         Flights 
     WHERE 
         cancelled = FALSE 
     GROUP BY 
-        aircraftRegistration
-),
-FlightCyclesModel AS (
-    SELECT 
-        aircraft_model, 
-        COUNT(*) AS flight_cycles 
-    FROM 
-        Flights 
-    WHERE 
-        cancelled = FALSE 
-    GROUP BY 
+        aircraftRegistration,
         aircraft_model
 ),
 
@@ -58,10 +41,11 @@ FlightCyclesModel AS (
 -- 3. ADOS (Aircraft days out of service) aka number of days 
 -- 4. ADIS
 -- that the aircraft wasn't usable due to maintainence
-
+-- per month (also per year).
 AircraftDaysInService AS (
     SELECT 
         aircraftRegistration, 
+        aircraft_model,
         SUM(scheduledArrival - scheduledDeparture) AS total_days,  -- Total operational days
         SUM(CASE WHEN programmed = TRUE THEN (scheduledArrival - scheduledDeparture) ELSE 0 END) AS adoss, -- Scheduled maintenance days
         SUM(CASE WHEN programmed = FALSE THEN (scheduledArrival - scheduledDeparture) ELSE 0 END) AS adosu, -- Unscheduled maintenance days
@@ -75,13 +59,16 @@ AircraftDaysInService AS (
     FROM 
         Maintenance
     GROUP BY 
-        aircraftRegistration
+        aircraftRegistration, 
+        aircraft_model
 ),
 
 -- 5. DU (Daily utilization)
+-- per month (also per year).
 DailyUtilization AS (
     SELECT 
         FH.aircraftRegistration,
+        FC.aircraft_model,
         (FH.flight_hours / ADIS.adis) AS daily_utilization
     FROM 
         FlightHours FH, AircraftDaysInService ADIS 
@@ -90,9 +77,11 @@ DailyUtilization AS (
 ),
 
 -- 6. DC (Daily Cycles)
+-- per month (also per year).
 DailyCycles AS (
     SELECT 
-        FC.aircraftRegistration
+        FC.aircraftRegistration, 
+        FC.aircraft_model,
         (FC.flight_cycles / ADIS.adis) AS daily_cycles
     FROM 
         FlightCycles FC, AircraftDaysInService ADIS 
@@ -101,6 +90,7 @@ DailyCycles AS (
 ),
 
 -- 7. DYR (Delay Rate)
+-- per month (also per year).
 DelayData AS (
     SELECT 
         aircraftRegistration,
@@ -130,6 +120,7 @@ DelayData AS (
 ), 
 
 -- 8. Cancellation Rate 
+-- per month (also per year).
 Cancellations AS (
     SELECT 
         aircraftRegistration,
@@ -152,6 +143,7 @@ CancellationRate AS (
 ),
 
 -- 9. TDR (Technical Dispatch Reliability)
+-- per month (also per year).
 TechnicalDispatchReliability AS (
     SELECT 
         FC.aircraftRegistration,
@@ -164,6 +156,7 @@ TechnicalDispatchReliability AS (
 ),
 
 -- 10. ADD (Average Delay Duration)
+-- per month (also per year).
 AverageDelayDuration AS (
     SELECT 
         aircraftRegistration,
@@ -176,7 +169,7 @@ AverageDelayDuration AS (
 
 
 -- LOGBOOK KPI'S
-
+-- per month (also per year).
 , LogbookEntries AS (
     SELECT 
         aircraftRegistration, 
