@@ -38,8 +38,14 @@ CREATE TABLE technicalLogBook (
 );
 
 
+--INDEX CREATION (if the creation of materialized views is so slow)
 
+CREATE INDEX air_indx ON aircraft(aircraftId);
 
+CREATE INDEX flight_air_indx ON flight(aircraftId);
 
+CREATE INDEX mant_air_indx ON maintenanceEvent(aircraftId);
+
+CREATE INDEX tlb_air_indx ON technicalLogBook(aircraftId);
 
 
