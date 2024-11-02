@@ -1,1 +1,0 @@
--- Computing the KPI's in the original tables step to step

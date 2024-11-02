@@ -17,11 +17,10 @@ CREATE TABLE flightStats(
     FOREIGN KEY aircraftId REFERENCES aircraft(aircraftId) NOT NULL,
     PRIMARY KEY (aircraftId)
 );
---comentar Walter
 CREATE TABLE maintenanceStats(
     aircraftId CHAR(6),
     programmed BOOLEAN,
-    timeUnavailable FLOAT?? INTEGER,
+    timeUnavailable INTEGER,
     FOREIGN KEY aircraftId REFERENCES aircraft(aircraftId) NOT NULL,
     PRIMARY KEY (aircraftId)
 );
